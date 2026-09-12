@@ -176,7 +176,7 @@ def _guess_basket(vol: int) -> int:
     # New baskets are usually added in roughly similar vol bands. This is
     # only a first guess; _basket_candidates always falls back to all hosts.
     extra = max(0, vol - _BASKET_RANGES[-1][0] - 1)
-    return min(40, 27 + (extra // 216))
+    return min(60, 27 + (extra // 216))
 
 
 def _basket_candidates(nm_id: int) -> list[str]:
@@ -184,8 +184,8 @@ def _basket_candidates(nm_id: int) -> list[str]:
     guess = _guess_basket(vol)
     preferred = [guess, guess - 1, guess + 1, guess - 2, guess + 2]
     ordered: list[int] = []
-    for value in preferred + list(range(1, 41)):
-        if 1 <= value <= 40 and value not in ordered:
+    for value in preferred + list(range(1, 61)):
+        if 1 <= value <= 60 and value not in ordered:
             ordered.append(value)
     return [f"basket-{value:02d}.wbbasket.ru" for value in ordered]
 
