@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font: 14px system-ui; width: 340px; padding: 14px; }
+    input, button { box-sizing: border-box; width: 100%; margin-top: 8px; padding: 9px; }
+    .row { display: flex; gap: 8px; }
+    .row button { flex: 1; }
+    #status { margin-top: 10px; white-space: pre-wrap; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <strong>WB Seller Audit</strong>
+  <input id="seller" value="739228" placeholder="Seller ID">
+  <div class="row">
+    <button id="analyze">Анализ</button>
+    <button id="export">JSON</button>
+  </div>
+  <button id="clear">Очистить перехват</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
