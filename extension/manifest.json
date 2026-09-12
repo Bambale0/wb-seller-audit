@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "WB Seller Audit Capture",
+  "version": "0.1.0",
+  "description": "Capture MPStats JSON responses and send them to WB Seller Audit.",
+  "permissions": ["storage", "downloads", "activeTab"],
+  "host_permissions": [
+    "https://*.mpstats.io/*",
+    "https://mpstats.io/*",
+    "https://apix.chillcreative.ru/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.mpstats.io/*", "https://mpstats.io/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-hook.js"],
+      "matches": ["https://*.mpstats.io/*", "https://mpstats.io/*"]
+    }
+  ],
+  "action": {
+    "default_title": "WB Seller Audit",
+    "default_popup": "popup.html"
+  }
+}
