@@ -5,12 +5,18 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models import AuditRequest, CapturesRequest, ClassificationRequest
+from app.models import (
+    AuditRequest,
+    CapturesRequest,
+    ClassificationRequest,
+    WbPublicCatalogRequest,
+)
 from app.services.audit import build_audit
 from app.services.classifier import deepseek_classify
 from app.services.normalizer import normalize_captures
+from app.services.wb_public import build_wb_public_snapshot
 
-app = FastAPI(title="WB Seller Audit", version="0.1.0")
+app = FastAPI(title="WB Seller Audit", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,7 +28,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "wb-seller-audit", "version": "0.1.0"}
+    return {"ok": True, "service": "wb-seller-audit", "version": "0.2.0"}
 
 
 @app.post("/api/v1/analyze")
@@ -34,6 +40,11 @@ def analyze(request: AuditRequest):
 def analyze_captures(request: CapturesRequest):
     records = normalize_captures(request.captures, seller_id=request.seller_id)
     return build_audit(AuditRequest(records=records))
+
+
+@app.post("/api/v1/sources/wb-public/analyze")
+def analyze_wb_public(request: WbPublicCatalogRequest):
+    return build_wb_public_snapshot(request.pages, seller_id=request.seller_id)
 
 
 @app.post("/api/v1/classify")
