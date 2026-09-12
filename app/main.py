@@ -10,13 +10,15 @@ from app.models import (
     CapturesRequest,
     ClassificationRequest,
     WbPublicCatalogRequest,
+    WbPublicEvidenceRequest,
 )
 from app.services.audit import build_audit
 from app.services.classifier import deepseek_classify
 from app.services.normalizer import normalize_captures
+from app.services.wb_evidence import collect_wb_public_evidence
 from app.services.wb_public import build_wb_public_snapshot
 
-app = FastAPI(title="WB Seller Audit", version="0.2.0")
+app = FastAPI(title="WB Seller Audit", version="0.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +30,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "wb-seller-audit", "version": "0.2.0"}
+    return {"ok": True, "service": "wb-seller-audit", "version": "0.3.0"}
 
 
 @app.post("/api/v1/analyze")
@@ -45,6 +47,11 @@ def analyze_captures(request: CapturesRequest):
 @app.post("/api/v1/sources/wb-public/analyze")
 def analyze_wb_public(request: WbPublicCatalogRequest):
     return build_wb_public_snapshot(request.pages, seller_id=request.seller_id)
+
+
+@app.post("/api/v1/sources/wb-public/evidence")
+async def analyze_wb_public_evidence(request: WbPublicEvidenceRequest):
+    return await collect_wb_public_evidence(request)
 
 
 @app.post("/api/v1/classify")
