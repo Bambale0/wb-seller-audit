@@ -1,13 +1,31 @@
 const API = "https://apix.chillcreative.ru/wb-audit/api/v1/captures/analyze";
 const statusEl = document.getElementById("status");
+const toggleEl = document.getElementById("toggle");
 
-async function getCaptures() {
-  const stored = await chrome.storage.local.get({ captures: [] });
-  return stored.captures || [];
+async function getState() {
+  return chrome.storage.local.get({
+    capture_enabled: false,
+    captures: []
+  });
 }
 
+async function render() {
+  const state = await getState();
+  toggleEl.textContent = state.capture_enabled ? "Остановить перехват" : "Включить перехват";
+  statusEl.textContent =
+    (state.capture_enabled ? "Перехват включён" : "Перехват выключен") +
+    "\nОтветов: " + (state.captures || []).length;
+}
+
+toggleEl.onclick = async () => {
+  const state = await getState();
+  await chrome.storage.local.set({capture_enabled: !state.capture_enabled});
+  await render();
+};
+
 document.getElementById("analyze").onclick = async () => {
-  const captures = await getCaptures();
+  const state = await getState();
+  const captures = state.captures || [];
   statusEl.textContent = "Отправляю " + captures.length + " ответов...";
   try {
     const response = await fetch(API, {
@@ -31,7 +49,8 @@ document.getElementById("analyze").onclick = async () => {
 };
 
 document.getElementById("export").onclick = async () => {
-  const captures = await getCaptures();
+  const state = await getState();
+  const captures = state.captures || [];
   const blob = new Blob([JSON.stringify(captures, null, 2)], {type: "application/json"});
   const url = URL.createObjectURL(blob);
   chrome.downloads.download({url, filename: "mpstats-captures.json", saveAs: true});
@@ -39,9 +58,7 @@ document.getElementById("export").onclick = async () => {
 
 document.getElementById("clear").onclick = async () => {
   await chrome.storage.local.set({captures: []});
-  statusEl.textContent = "Перехват очищен";
+  await render();
 };
 
-getCaptures().then((captures) => {
-  statusEl.textContent = "Перехвачено ответов: " + captures.length;
-});
+render();
