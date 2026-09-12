@@ -1,6 +1,6 @@
 const CAPTURE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/captures/analyze";
 const WB_PUBLIC_ANALYZE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/sources/wb-public/analyze";
-const WB_CATALOG_API = "https://catalog.wb.ru/sellers/v2/catalog";
+const WB_CATALOG_API = "https://catalog.wb.ru/sellers/v4/catalog";
 
 const statusEl = document.getElementById("status");
 const toggleEl = document.getElementById("toggle");
