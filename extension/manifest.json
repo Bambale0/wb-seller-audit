@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WB Seller Audit Capture",
-  "version": "0.2.1",
-  "description": "Audit WB sellers from public catalog data or captured MPStats JSON.",
+  "version": "0.3.0",
+  "description": "Audit WB sellers from public catalog evidence or captured MPStats JSON.",
   "permissions": ["storage", "downloads"],
   "host_permissions": [
     "https://*.mpstats.io/*",

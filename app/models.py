@@ -36,6 +36,11 @@ class WbPublicCatalogRequest(BaseModel):
     pages: list[dict[str, Any]] = Field(min_length=1)
 
 
+class WbPublicEvidenceRequest(WbPublicCatalogRequest):
+    marked_only: bool = True
+    max_items: int = Field(default=30, ge=1, le=100)
+
+
 class ClassificationRequest(BaseModel):
     names: list[str] = Field(min_length=1, max_length=30)
 
@@ -108,4 +113,40 @@ class WbPublicSnapshot(BaseModel):
     marked_candidates: int
     items: list[WbPublicProduct]
     capabilities: SourceCapabilities
+    notes: list[str]
+
+
+class WbPriceHistoryPoint(BaseModel):
+    date: date
+    price_rub: float
+
+
+class WbProductEvidence(BaseModel):
+    nm_id: int
+    name: str
+    marked_candidate: bool
+    imt_id: int | None = None
+    card_created: date | None = None
+    card_updated: date | None = None
+    need_kiz: bool | None = None
+    price_history_from: date | None = None
+    price_history_to: date | None = None
+    price_history_points: int = 0
+    earliest_observed_review: date | None = None
+    latest_observed_review: date | None = None
+    exact_reviews_observed: int = 0
+    group_feedback_count: int | None = None
+    basket_host: str | None = None
+    notes: list[str] = Field(default_factory=list)
+
+
+class WbEvidenceResult(BaseModel):
+    source: str = "wb_public_evidence"
+    seller_id: int
+    scanned_products: int
+    marked_products_scanned: int
+    wb_need_kiz_true: int
+    earliest_marked_card_created: date | None
+    earliest_marked_observed_review: date | None
+    items: list[WbProductEvidence]
     notes: list[str]
