@@ -1,0 +1,8 @@
+fastapi<1,>=0.116
+uvicorn[standard]<1,>=0.35
+pydantic<3,>=2.11
+httpx<1,>=0.28
+python-dateutil<3,>=2.9
+
+[test]
+pytest<9,>=8.4

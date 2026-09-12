@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+app/__init__.py
+app/main.py
+app/models.py
+app/services/__init__.py
+app/services/audit.py
+app/services/classifier.py
+app/services/normalizer.py
+tests/test_audit.py
+wb_seller_audit.egg-info/PKG-INFO
+wb_seller_audit.egg-info/SOURCES.txt
+wb_seller_audit.egg-info/dependency_links.txt
+wb_seller_audit.egg-info/requires.txt
+wb_seller_audit.egg-info/top_level.txt
