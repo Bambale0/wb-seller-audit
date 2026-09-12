@@ -47,17 +47,25 @@ async def deepseek_classify(name: str) -> Classification:
         f"Название товара: {name!r}"
     )
 
-    async with httpx.AsyncClient(timeout=20) as client:
-        response = await client.post(
-            f"{base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "model": model,
-                "temperature": 0,
-                "response_format": {"type": "json_object"},
-                "messages": [{"role": "user", "content": prompt}],
-            },
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(
+                f"{base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={
+                    "model": model,
+                    "temperature": 0,
+                    "response_format": {"type": "json_object"},
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            )
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            return Classification.model_validate(json.loads(content))
+    except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError):
+        return Classification(
+            category=deterministic.category,
+            marked_candidate=deterministic.marked_candidate,
+            confidence=deterministic.confidence,
+            reason=deterministic.reason + "; DeepSeek недоступен, использован fallback",
         )
-        response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"]
-        return Classification.model_validate(json.loads(content))
