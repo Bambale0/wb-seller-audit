@@ -7,15 +7,21 @@
     input, button { box-sizing: border-box; width: 100%; margin-top: 8px; padding: 9px; }
     .row { display: flex; gap: 8px; }
     .row button { flex: 1; }
+    .primary { font-weight: 700; }
+    .hint { margin-top: 8px; color: #666; font-size: 11px; line-height: 1.35; }
     #status { margin-top: 10px; white-space: pre-wrap; font-size: 12px; }
   </style>
 </head>
 <body>
   <strong>WB Seller Audit</strong>
   <input id="seller" value="739228" placeholder="Seller ID">
-  <button id="toggle">Включить перехват</button>
+
+  <button id="publicAudit" class="primary">Аудит WB без MPStats</button>
+  <div class="hint">Бесплатно: текущий каталог, цены, остатки и кандидаты на маркировку. Историю продаж публичный WB API не отдаёт.</div>
+
+  <button id="toggle">Включить перехват MPStats</button>
   <div class="row">
-    <button id="analyze">Анализ</button>
+    <button id="analyze">Анализ MPStats</button>
     <button id="export">JSON</button>
   </div>
   <button id="clear">Очистить перехват</button>

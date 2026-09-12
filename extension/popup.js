@@ -1,6 +1,11 @@
-const API = "https://apix.chillcreative.ru/wb-audit/api/v1/captures/analyze";
+const CAPTURE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/captures/analyze";
+const WB_PUBLIC_ANALYZE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/sources/wb-public/analyze";
+const WB_CATALOG_API = "https://catalog.wb.ru/sellers/v2/catalog";
+
 const statusEl = document.getElementById("status");
 const toggleEl = document.getElementById("toggle");
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function getState() {
   return chrome.storage.local.get({
@@ -11,10 +16,89 @@ async function getState() {
 
 async function render() {
   const state = await getState();
-  toggleEl.textContent = state.capture_enabled ? "Остановить перехват" : "Включить перехват";
+  toggleEl.textContent = state.capture_enabled ? "Остановить перехват MPStats" : "Включить перехват MPStats";
   statusEl.textContent =
-    (state.capture_enabled ? "Перехват включён" : "Перехват выключен") +
+    (state.capture_enabled ? "Перехват MPStats включён" : "Перехват MPStats выключен") +
     "\nОтветов: " + (state.captures || []).length;
+}
+
+function sellerId() {
+  return Number(document.getElementById("seller").value) || null;
+}
+
+async function fetchCatalogPage(seller, page) {
+  const url = new URL(WB_CATALOG_API);
+  url.search = new URLSearchParams({
+    ab_testing: "false",
+    appType: "1",
+    curr: "rub",
+    dest: "-1257786",
+    hide_dtype: "13",
+    lang: "ru",
+    limit: "100",
+    page: String(page),
+    sort: "popular",
+    spp: "30",
+    supplier: String(seller)
+  }).toString();
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          accept: "application/json, text/plain, */*"
+        }
+      });
+
+      if (response.ok) {
+        return response.json();
+      }
+
+      lastError = new Error("WB HTTP " + response.status);
+      if (![403, 429, 498].includes(response.status)) {
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    await sleep(700 * (attempt + 1));
+  }
+
+  throw lastError || new Error("WB public API недоступен");
+}
+
+async function fetchSellerCatalog(seller, maxPages = 50) {
+  const pages = [];
+  let collected = 0;
+  let total = null;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    statusEl.textContent =
+      "WB public: загружаю страницу " + page +
+      (total === null ? "" : "\nТоваров: " + collected + " / " + total);
+
+    const payload = await fetchCatalogPage(seller, page);
+    const products = payload?.data?.products || payload?.products || [];
+    if (!Array.isArray(products) || products.length === 0) {
+      break;
+    }
+
+    pages.push(payload);
+    collected += products.length;
+
+    const rawTotal = Number(payload?.data?.total ?? payload?.total);
+    if (Number.isFinite(rawTotal) && rawTotal >= 0) {
+      total = rawTotal;
+    }
+    if (total !== null && collected >= total) {
+      break;
+    }
+
+    await sleep(220);
+  }
+
+  return pages;
 }
 
 toggleEl.onclick = async () => {
@@ -23,16 +107,50 @@ toggleEl.onclick = async () => {
   await render();
 };
 
+document.getElementById("publicAudit").onclick = async () => {
+  const seller = sellerId();
+  if (!seller) {
+    statusEl.textContent = "Укажи Seller ID.";
+    return;
+  }
+
+  try {
+    statusEl.textContent = "WB public: начинаю сбор...";
+    const pages = await fetchSellerCatalog(seller);
+    if (pages.length === 0) {
+      throw new Error("WB не вернул товары продавца");
+    }
+
+    statusEl.textContent = "Отправляю текущий каталог на аудит...";
+    const response = await fetch(WB_PUBLIC_ANALYZE_API, {
+      method: "POST",
+      headers: {"content-type": "application/json"},
+      body: JSON.stringify({seller_id: seller, pages})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(JSON.stringify(data));
+
+    statusEl.textContent =
+      "Источник: WB public" +
+      "\nТоваров: " + data.products +
+      "\nКандидатов на маркировку: " + data.marked_candidates +
+      "\nИстория продаж: недоступна публично" +
+      "\nДля дат НПД нужна история/отчёты.";
+  } catch (error) {
+    statusEl.textContent = "Ошибка WB public: " + error.message;
+  }
+};
+
 document.getElementById("analyze").onclick = async () => {
   const state = await getState();
   const captures = state.captures || [];
   statusEl.textContent = "Отправляю " + captures.length + " ответов...";
   try {
-    const response = await fetch(API, {
+    const response = await fetch(CAPTURE_API, {
       method: "POST",
       headers: {"content-type": "application/json"},
       body: JSON.stringify({
-        seller_id: Number(document.getElementById("seller").value) || null,
+        seller_id: sellerId(),
         captures
       })
     });
