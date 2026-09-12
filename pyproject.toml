@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "wb-seller-audit"
 version = "0.1.0"
@@ -13,6 +17,9 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8.4,<9"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
