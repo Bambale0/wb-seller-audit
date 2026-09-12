@@ -3,7 +3,7 @@
   "name": "WB Seller Audit Capture",
   "version": "0.1.0",
   "description": "Capture MPStats JSON responses and send them to WB Seller Audit.",
-  "permissions": ["storage", "downloads", "activeTab"],
+  "permissions": ["storage", "downloads"],
   "host_permissions": [
     "https://*.mpstats.io/*",
     "https://mpstats.io/*",
