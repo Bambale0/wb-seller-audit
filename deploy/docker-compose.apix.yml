@@ -1,0 +1,13 @@
+services:
+  wb-seller-audit:
+    build:
+      context: ..
+    image: wb-seller-audit:local
+    container_name: wb-seller-audit
+    restart: unless-stopped
+    networks:
+      - artflow_default
+
+networks:
+  artflow_default:
+    external: true
