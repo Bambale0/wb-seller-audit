@@ -31,6 +31,10 @@ class CapturesRequest(BaseModel):
     seller_id: int | None = None
 
 
+class ClassificationRequest(BaseModel):
+    names: list[str] = Field(min_length=1, max_length=30)
+
+
 class Classification(BaseModel):
     category: str
     marked_candidate: bool
@@ -60,6 +64,7 @@ class AuditResult(BaseModel):
     total_revenue: float
     first_marked_candidate_sale: date | None
     first_npd_limit_exceeded: date | None
+    npd_limit_exceeded_by_year: dict[str, date]
     earliest_risk_date: date | None
     revenue_after_earliest_risk: float
     monthly: list[MonthSummary]
