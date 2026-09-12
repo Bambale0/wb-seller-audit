@@ -31,6 +31,11 @@ class CapturesRequest(BaseModel):
     seller_id: int | None = None
 
 
+class WbPublicCatalogRequest(BaseModel):
+    seller_id: int = Field(gt=0)
+    pages: list[dict[str, Any]] = Field(min_length=1)
+
+
 class ClassificationRequest(BaseModel):
     names: list[str] = Field(min_length=1, max_length=30)
 
@@ -70,4 +75,37 @@ class AuditResult(BaseModel):
     monthly: list[MonthSummary]
     vat_145_windows: list[RollingWindow]
     marked_candidates: list[dict[str, Any]]
+    notes: list[str]
+
+
+class WbPublicProduct(BaseModel):
+    nm_id: int
+    seller_id: int | None = None
+    seller_name: str = ""
+    name: str = ""
+    brand: str = ""
+    price: float | None = None
+    full_price: float | None = None
+    total_quantity: int | None = None
+    rating: float | None = None
+    feedbacks: int | None = None
+    marked_candidate: bool = False
+    marked_confidence: float = 0.0
+    marked_reason: str = ""
+
+
+class SourceCapabilities(BaseModel):
+    current_catalog: bool
+    historical_sales: bool
+    historical_revenue: bool
+    tax_dates: bool
+
+
+class WbPublicSnapshot(BaseModel):
+    source: str = "wb_public"
+    seller_id: int
+    products: int
+    marked_candidates: int
+    items: list[WbPublicProduct]
+    capabilities: SourceCapabilities
     notes: list[str]
