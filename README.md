@@ -73,7 +73,38 @@ MVP развернут на host `apix`:
 
 Принимает сырые captures расширения, пытается найти массивы продаж, нормализует их и строит исторический аудит.
 
-### `POST /api/v1/sources/mpstats/seller/analyze`\n\nОсновной исторический источник через MPStats Integration API. Токен хранится только на backend в `MPSTATS_TOKEN` и передаётся заголовком `X-Mpstats-TOKEN`. Backend автоматически:\n\n- проходит пагинацию `seller/items` до конца (до 5000 строк за запрос);\n- получает `seller/by_date` для дневной выручки продавца;\n- в `history_mode=marked` получает `items/{nm_id}/by_period` только для кандидатов на маркируемый товар;\n- в `history_mode=all` получает SKU-level историю для всех найденных товаров;\n- обрабатывает `202`, `429` с `Retry-After` и временные `5xx` повторными запросами;\n- запрашивает `user/report_api_limit` и возвращает остаток API-квоты;\n- не складывает seller-level и SKU-level выручку дважды: seller/by_date отвечает за оборот, SKU history — за доказательные даты товара.\n\nПример:\n\n```json\n{\n  \"seller_id\": 739228,\n  \"d1\": \"2025-01-01\",\n  \"d2\": \"2026-09-13\",\n  \"fbs\": true,\n  \"history_mode\": \"marked\",\n  \"page_size\": 1000,\n  \"item_concurrency\": 5,\n  \"marketplace_expense_ratio\": 0.33\n}\n```\n\nДиагностика интеграции: `GET /api/v1/sources/mpstats/health`. Токен никогда не возвращается клиенту.\n\nПеременные окружения см. в `.env.example`: `MPSTATS_TOKEN`, base/root URL, timeout и retry-настройки.\n\n### `POST /api/v1/sources/wb-public/analyze`
+### `POST /api/v1/sources/mpstats/seller/analyze`
+
+Основной исторический источник через MPStats Integration API. Токен хранится только на backend в `MPSTATS_TOKEN` и передаётся заголовком `X-Mpstats-TOKEN`. Backend автоматически:
+
+- проходит пагинацию `seller/items` до конца (до 5000 строк за запрос);
+- получает `seller/by_date` для дневной выручки продавца;
+- в `history_mode=marked` получает `items/{nm_id}/by_period` только для кандидатов на маркируемый товар;
+- в `history_mode=all` получает SKU-level историю для всех найденных товаров;
+- обрабатывает `202`, `429` с `Retry-After` и временные `5xx` повторными запросами;
+- запрашивает `user/report_api_limit` и возвращает остаток API-квоты;
+- не складывает seller-level и SKU-level выручку дважды: seller/by_date отвечает за оборот, SKU history — за доказательные даты товара.
+
+Пример:
+
+```json
+{
+  "seller_id": 739228,
+  "d1": "2025-01-01",
+  "d2": "2026-09-13",
+  "fbs": true,
+  "history_mode": "marked",
+  "page_size": 1000,
+  "item_concurrency": 5,
+  "marketplace_expense_ratio": 0.33
+}
+```
+
+Диагностика интеграции: `GET /api/v1/sources/mpstats/health`. Токен никогда не возвращается клиенту.
+
+Переменные окружения см. в `.env.example`: `MPSTATS_TOKEN`, base/root URL, timeout и retry-настройки.
+
+### `POST /api/v1/sources/wb-public/analyze`
 
 Принимает страницы публичного каталога WB:
 
