@@ -9,6 +9,7 @@ from app.services.mpstats import (
     MpstatsClient,
     build_mpstats_audit_from_payloads,
 )
+from app.services.normalizer import normalize_mpstats_item_history
 
 
 class SellerItemsTransport(httpx.AsyncBaseTransport):
@@ -125,3 +126,16 @@ def test_mpstats_payload_audit_uses_seller_revenue_and_sku_history_separately():
     assert result.audit.monthly[0].revenue == 300
     assert result.item_histories_fetched == 1
     assert result.quota["remaining"] == 97
+
+
+def test_item_history_does_not_double_count_fbs_when_sales_is_present():
+    records = normalize_mpstats_item_history(
+        {"id": 101, "name": "Гетры"},
+        [{"data": "2025-05-02", "sales": 2, "salesfbs": 1, "final_price": 150}],
+        seller_id=739228,
+        include_fbs=True,
+    )
+
+    assert len(records) == 1
+    assert records[0].sales == 2
+    assert records[0].revenue == 300
