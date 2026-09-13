@@ -6,7 +6,7 @@
     body { font: 14px system-ui; width: 340px; padding: 14px; }
     input, select, button { box-sizing: border-box; width: 100%; margin-top: 8px; padding: 9px; }
     .row { display: flex; gap: 8px; }
-    .row button { flex: 1; }
+    .row > * { flex: 1; min-width: 0; }
     .primary { font-weight: 700; }
     .hint { margin-top: 8px; color: #666; font-size: 11px; line-height: 1.35; }
     #status { margin-top: 10px; white-space: pre-wrap; font-size: 12px; }
