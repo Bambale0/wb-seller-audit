@@ -29,6 +29,16 @@ def _continuous_months(start: str, end: str) -> list[str]:
     return result
 
 
+def _has_sale_activity(record) -> bool:
+    return any(
+        (
+            record.revenue > 0,
+            record.sales > 0,
+            record.orders > 0,
+        )
+    )
+
+
 def build_audit(req: AuditRequest) -> AuditResult:
     records = sorted(req.records, key=lambda x: x.date)
 
@@ -37,8 +47,6 @@ def build_audit(req: AuditRequest) -> AuditResult:
     )
     cumulative_by_year: dict[int, float] = defaultdict(float)
     npd_limit_exceeded_by_year: dict[str, date] = {}
-    first_marked_candidate_sale = None
-    marked_candidates: list[dict] = []
 
     for record in records:
         month = monthly_raw[_month_key(record.date)]
@@ -55,8 +63,17 @@ def build_audit(req: AuditRequest) -> AuditResult:
         ):
             npd_limit_exceeded_by_year[year_key] = record.date
 
+    risk_records = sorted(req.risk_records or records, key=lambda x: x.date)
+    first_marked_candidate_sale = None
+    marked_candidates: list[dict] = []
+
+    for record in risk_records:
         cls = keyword_classify(record.name)
-        if cls.marked_candidate and record.date >= req.marked_goods_start:
+        if (
+            cls.marked_candidate
+            and record.date >= req.marked_goods_start
+            and _has_sale_activity(record)
+        ):
             if first_marked_candidate_sale is None:
                 first_marked_candidate_sale = record.date
             marked_candidates.append(
@@ -66,6 +83,7 @@ def build_audit(req: AuditRequest) -> AuditResult:
                     "sku": record.sku,
                     "name": record.name,
                     "revenue": round(record.revenue, 2),
+                    "sales": record.sales,
                     "confidence": cls.confidence,
                     "reason": cls.reason,
                 }

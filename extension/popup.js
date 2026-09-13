@@ -1,5 +1,5 @@
 const CAPTURE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/captures/analyze";
-const WB_PUBLIC_ANALYZE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/sources/wb-public/analyze";
+const WB_PUBLIC_ANALYZE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/sources/wb-public/analyze";\nconst MPSTATS_SELLER_ANALYZE_API = "https://apix.chillcreative.ru/wb-audit/api/v1/sources/mpstats/seller/analyze";
 const WB_CATALOG_API = "https://catalog.wb.ru/sellers/v4/catalog";
 
 const statusEl = document.getElementById("status");
@@ -104,7 +104,50 @@ async function fetchSellerCatalog(seller, maxPages = 50) {
 toggleEl.onclick = async () => {
   const state = await getState();
   await chrome.storage.local.set({capture_enabled: !state.capture_enabled});
-  await render();
+  await setDefaultDates();\nrender();
+};
+
+document.getElementById("mpstatsApiAudit").onclick = async () => {
+  const seller = sellerId();
+  const d1 = document.getElementById("d1").value;
+  const d2 = document.getElementById("d2").value;
+  const historyMode = document.getElementById("historyMode").value;
+
+  if (!seller || !d1 || !d2) {
+    statusEl.textContent = "Укажи Seller ID и период.";
+    return;
+  }
+
+  try {
+    statusEl.textContent = "MPStats API: загружаю историю продавца...";
+    const response = await fetch(MPSTATS_SELLER_ANALYZE_API, {
+      method: "POST",
+      headers: {"content-type": "application/json"},
+      body: JSON.stringify({
+        seller_id: seller,
+        d1,
+        d2,
+        fbs: true,
+        history_mode: historyMode,
+        marketplace_expense_ratio: 0.33
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.detail || JSON.stringify(data));
+
+    const audit = data.audit || {};
+    statusEl.textContent =
+      "Источник: MPStats API" +
+      "\nТоваров: " + data.items_fetched +
+      "\nИсторий SKU: " + data.item_histories_fetched +
+      "\nВыручка: " + (audit.total_revenue ?? "—") +
+      "\nПервая маркируемая: " + (audit.first_marked_candidate_sale || "—") +
+      "\nЛимит НПД: " + (audit.first_npd_limit_exceeded || "—") +
+      "\nAPI осталось: " + (data.quota?.remaining ?? "—") +
+      (data.warnings?.length ? "\n⚠ " + data.warnings.join("\n⚠ ") : "");
+  } catch (error) {
+    statusEl.textContent = "Ошибка MPStats API: " + error.message;
+  }
 };
 
 document.getElementById("publicAudit").onclick = async () => {

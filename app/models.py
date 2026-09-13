@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class SaleRecord(BaseModel):
@@ -20,6 +20,7 @@ class SaleRecord(BaseModel):
 
 class AuditRequest(BaseModel):
     records: list[SaleRecord]
+    risk_records: list[SaleRecord] = Field(default_factory=list)
     npd_limit: float = 2_400_000
     vat_145_three_month_limit: float = 2_000_000
     marketplace_expense_ratio: float = Field(default=0.60, ge=0, le=1)
@@ -109,3 +110,39 @@ class WbPublicSnapshot(BaseModel):
     items: list[WbPublicProduct]
     capabilities: SourceCapabilities
     notes: list[str]
+
+
+class MpstatsSellerAuditRequest(BaseModel):
+    seller_id: int = Field(gt=0)
+    d1: date
+    d2: date
+    fbs: bool = True
+    page_size: int = Field(default=1000, ge=1, le=5000)
+    max_items: int | None = Field(default=None, ge=1)
+    history_mode: Literal["none", "marked", "all"] = "marked"
+    item_concurrency: int = Field(default=5, ge=1, le=10)
+    npd_limit: float = Field(default=2_400_000, gt=0)
+    vat_145_three_month_limit: float = Field(default=2_000_000, gt=0)
+    marketplace_expense_ratio: float = Field(default=0.60, ge=0, le=1)
+    marked_goods_start: date = date(2025, 3, 1)
+
+    @model_validator(mode="after")
+    def validate_period(self):
+        if self.d2 < self.d1:
+            raise ValueError("d2 must be greater than or equal to d1")
+        return self
+
+
+class MpstatsSellerAuditResult(BaseModel):
+    source: str = "mpstats_api"
+    seller_id: int
+    d1: date
+    d2: date
+    items_total: int | None = None
+    items_fetched: int
+    item_histories_fetched: int
+    item_history_failures: list[dict[str, Any]] = Field(default_factory=list)
+    quota: dict[str, int] | None = None
+    capabilities: SourceCapabilities
+    audit: AuditResult
+    warnings: list[str] = Field(default_factory=list)

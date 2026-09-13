@@ -5,6 +5,13 @@ services:
     image: wb-seller-audit:local
     container_name: wb-seller-audit
     restart: unless-stopped
+    environment:
+      MPSTATS_TOKEN: ${MPSTATS_TOKEN:-}
+      MPSTATS_API_BASE_URL: ${MPSTATS_API_BASE_URL:-https://mpstats.io/api/analytics/v1/wb}
+      MPSTATS_API_ROOT_URL: ${MPSTATS_API_ROOT_URL:-https://mpstats.io/api}
+      MPSTATS_TIMEOUT_SECONDS: ${MPSTATS_TIMEOUT_SECONDS:-30}
+      MPSTATS_MAX_RETRIES: ${MPSTATS_MAX_RETRIES:-4}
+      MPSTATS_RETRY_BASE_SECONDS: ${MPSTATS_RETRY_BASE_SECONDS:-1}
     networks:
       - artflow_default
 

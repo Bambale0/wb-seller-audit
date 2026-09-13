@@ -8,9 +8,19 @@ from dateutil import parser as date_parser
 
 from app.models import SaleRecord
 
-DATE_KEYS = ("date", "dt", "day", "saleDate", "sale_date", "lastChangeDate", "orderDate")
+DATE_KEYS = (
+    "date",
+    "dt",
+    "day",
+    "period",
+    "data",
+    "saleDate",
+    "sale_date",
+    "lastChangeDate",
+    "orderDate",
+)
 NAME_KEYS = ("name", "title", "productName", "product_name", "subjectName", "subject_name")
-NM_KEYS = ("nmId", "nm_id", "nmID", "article", "wbArticle")
+NM_KEYS = ("nmId", "nm_id", "nmID", "article", "wbArticle", "id")
 SKU_KEYS = ("sku", "vendorCode", "vendor_code", "supplierArticle")
 REVENUE_KEYS = ("revenue", "salesRub", "sales_rub", "saleSum", "sale_sum", "sum", "forPay", "retailAmount")
 ORDERS_KEYS = ("orders", "ordersCount", "orders_count")
@@ -128,3 +138,95 @@ def normalize_captures(captures: list[dict[str, Any]], seller_id: int | None = N
                 records.append(record)
 
     return sorted(records, key=lambda x: x.date)
+
+
+def _payload_rows(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        for key in ("data", "items", "rows", "result"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [row for row in value if isinstance(row, dict)]
+    return []
+
+
+def normalize_mpstats_seller_by_date(
+    payload: Any,
+    *,
+    seller_id: int,
+) -> list[SaleRecord]:
+    records: list[SaleRecord] = []
+    for row in _payload_rows(payload):
+        dt = _date(_first(row, DATE_KEYS))
+        if dt is None:
+            continue
+
+        records.append(
+            SaleRecord(
+                date=dt,
+                seller_id=seller_id,
+                sales=_int(_first(row, SALES_KEYS)),
+                revenue=_number(_first(row, REVENUE_KEYS)),
+            )
+        )
+
+    return sorted(records, key=lambda record: record.date)
+
+
+def normalize_mpstats_item_history(
+    item: dict[str, Any],
+    payload: Any,
+    *,
+    seller_id: int,
+    include_fbs: bool,
+) -> list[SaleRecord]:
+    raw_id = item.get("id") or item.get("nm_id") or item.get("nmId")
+    try:
+        nm_id = int(raw_id)
+    except (TypeError, ValueError):
+        nm_id = None
+
+    name = str(item.get("name") or item.get("title") or "")
+    sku = str(
+        item.get("supplierArticle")
+        or item.get("vendorCode")
+        or item.get("vendor_code")
+        or ""
+    ) or None
+
+    records: list[SaleRecord] = []
+    for row in _payload_rows(payload):
+        dt = _date(_first(row, DATE_KEYS))
+        if dt is None:
+            continue
+
+        sales_value = _first(row, SALES_KEYS)
+        if sales_value is None and include_fbs:
+            sales_value = row.get("salesfbs") or row.get("sales_fbs")
+        sales = _int(sales_value)
+
+        revenue = _number(_first(row, REVENUE_KEYS))
+        if revenue == 0 and sales > 0:
+            price = _number(
+                row.get("final_price")
+                or row.get("client_price")
+                or row.get("price")
+            )
+            if price > 0:
+                revenue = sales * price
+
+        records.append(
+            SaleRecord(
+                date=dt,
+                seller_id=seller_id,
+                nm_id=nm_id,
+                sku=sku,
+                name=name,
+                sales=sales,
+                returns=_int(_first(row, RETURNS_KEYS)),
+                revenue=revenue,
+            )
+        )
+
+    return sorted(records, key=lambda record: record.date)
