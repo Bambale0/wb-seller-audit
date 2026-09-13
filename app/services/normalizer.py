@@ -201,9 +201,10 @@ def normalize_mpstats_item_history(
         if dt is None:
             continue
 
-        sales = _int(_first(row, SALES_KEYS))
-        if include_fbs:
-            sales += _int(row.get("salesfbs") or row.get("sales_fbs"))
+        sales_value = _first(row, SALES_KEYS)
+        if sales_value is None and include_fbs:
+            sales_value = row.get("salesfbs") or row.get("sales_fbs")
+        sales = _int(sales_value)
 
         revenue = _number(_first(row, REVENUE_KEYS))
         if revenue == 0 and sales > 0:
