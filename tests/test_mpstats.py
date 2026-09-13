@@ -1,8 +1,8 @@
+import asyncio
 import json
 from datetime import date
 
 import httpx
-import pytest
 
 from app.models import MpstatsSellerAuditRequest
 from app.services.mpstats import (
@@ -53,30 +53,32 @@ class SellerItemsTransport(httpx.AsyncBaseTransport):
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
 
-@pytest.mark.asyncio
-async def test_mpstats_client_retries_rate_limit_and_paginates():
-    transport = SellerItemsTransport()
-    async with MpstatsClient(
-        token="test-token",
-        transport=transport,
-        max_retries=1,
-        retry_base_seconds=0,
-    ) as client:
-        items, total = await client.seller_items(
-            seller_id=739228,
-            d1=date(2025, 1, 1),
-            d2=date(2025, 12, 31),
-            fbs=True,
-            page_size=2,
+def test_mpstats_client_retries_rate_limit_and_paginates():
+    async def scenario():
+        transport = SellerItemsTransport()
+        async with MpstatsClient(
+            token="test-token",
+            transport=transport,
+            max_retries=1,
+            retry_base_seconds=0,
+        ) as client:
+            items, total = await client.seller_items(
+                seller_id=739228,
+                d1=date(2025, 1, 1),
+                d2=date(2025, 12, 31),
+                fbs=True,
+                page_size=2,
+            )
+
+        assert total == 3
+        assert [item["id"] for item in items] == [1, 2, 3]
+        assert transport.first_page_attempts == 2
+        assert all(
+            request.headers["X-Mpstats-TOKEN"] == "test-token"
+            for request in transport.requests
         )
 
-    assert total == 3
-    assert [item["id"] for item in items] == [1, 2, 3]
-    assert transport.first_page_attempts == 2
-    assert all(
-        request.headers["X-Mpstats-TOKEN"] == "test-token"
-        for request in transport.requests
-    )
+    asyncio.run(scenario())
 
 
 def test_mpstats_payload_audit_uses_seller_revenue_and_sku_history_separately():
